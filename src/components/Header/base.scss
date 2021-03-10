@@ -1,4 +1,4 @@
-@import "../../../global.scss";
+@import "../../global.scss";
 
 .ice-design-layout-header {
   padding: 0 0;
@@ -55,5 +55,34 @@
   margin-top: 20px;
   input{
     padding-left:5px!important;
+  }
+}
+
+.common-btn {
+  width: 120px;
+  height: 30px;
+  background: rgb(238, 199, 16);
+  border-radius: 12px;
+  box-sizing: border-box;
+  color: #fff;
+  font-size: 14px;
+  padding: 6px 30px;
+  span {
+    float: left;
+  }
+  b {
+    float: right;
+  }
+  &.active,
+  &:hover {
+    cursor: pointer;
+    background: #120e47;
+    h2,
+    h3 {
+      color: #fff;
+    }
+    .info-div {
+      color: #c3e3f4;
+    }
   }
 }

@@ -1,7 +1,7 @@
 /* eslint-disable prefer-template */
 /* eslint jsx-a11y/no-noninteractive-element-interactions:0 */
 import React, { Component } from 'react';
-import { Icon, Input, Select, Dialog } from '@icedesign/base';
+import { Icon, Input, Select, Dialog, Feedback } from '@icedesign/base';
 import Layout from '@icedesign/layout';
 import StyledMenu, {
   Item as MenuItem,
@@ -20,7 +20,7 @@ import Logo from '../Logo';
 import * as utils from '../../utils/utils';
 import * as constant from '../../utils/constant';
 import { T, setLang } from '../../utils/lang';
-import styles from './scss/base.scss';
+import './base.scss';
 import tabIcon from './tabIcon.png';
 import language from '../images/language.png';
 import i18n from '../../i18n';
@@ -46,6 +46,7 @@ class Header extends Component {
       nodeConfigVisible: false,
       nodeInfo,
       chainId: 0,
+      connectWalletTip: '连接钱包',
       customNodeDisabled: true,
       languages: [{value: 'zh', label:'中文'}, {value: 'en', label:'English'}],
       defaultLang,
@@ -137,10 +138,39 @@ class Header extends Component {
     history.push('/download');
   }
 
+  initMetamaskNetwork = async () => {
+    if (!window.ethereum && !window.web3) { //用来判断你是否安装了metamask
+      Feedback.toast.error('请安装MetaMask');
+    } else {
+      if (window.ethereum) {
+        try {
+          // 请求用户授权
+          await window.ethereum.enable();
+          if (window.ethereum.networkVersion != '128') {
+            Feedback.toast.error("请将MetaMask连接到Heco网络，否则您无法正常使用本网站");
+          } else {
+            history.go(0);
+          }
+        } catch (error) {
+          // 用户不授权时
+          Feedback.toast.error("MetaMask授权失败，会导致您无法正常使用本网站");
+          return;
+        }        
+      }     
+    }
+  }
+
   render() {
-    const { isMobile, theme, width, className, style, location, t } = this.props;  
+    const { isMobile, theme, width, className, style, location, t, connectWalletTip } = this.props;  
     const accountName = this.props.drizzleState.accounts[0];
-    const defaultTrigger = <Button text type="normal" style={{color: '#808080'}}><div><Icon style={{marginRight: 8}} type="account" /></div>{accountName.substr(0, 6) + '...' + accountName.substr(accountName.length - 3)}</Button>;
+    var defaultTrigger = null;
+    if (accountName != null) {
+      defaultTrigger = <Button text type="normal" style={{color: '#03263a'}}>
+                        {accountName.substr(0, 6) + '...' + accountName.substr(accountName.length - 3)}
+                      </Button>;
+    }
+    
+    
     const { pathname } = location;
 
     return (
@@ -225,9 +255,16 @@ class Header extends Component {
           className="ice-design-layout-header-menu"
           style={{ display: 'flex', alignItems: 'center' }}
         >
-          <Balloon trigger={defaultTrigger} closable={false}>
-            {this.props.drizzleState.accounts[0]}
-          </Balloon>
+          {
+            this.props.drizzleState.accounts[0] ? <Balloon trigger={defaultTrigger} closable={false}>
+                                                    {this.props.drizzleState.accounts[0]}
+                                                  </Balloon>
+                                                    :
+                                                  <div class="common-btn" style={{width: 90}} onClick={() => {this.initMetamaskNetwork();}}>
+                                                    连接钱包
+                                                  </div>
+          }
+          
           {/* <Button text type="normal" style={{color: '#808080', marginLeft: '30px'}} onClick={this.manageAccount.bind(this)}><Icon type="account" />{t('账号管理')}</Button> */}
           {/* &nbsp;&nbsp;
           <Button text type="normal" style={{color: '#808080', marginLeft: '30px',display: 'flex', alignItems: 'center'}} onClick={this.onChangeLanguage.bind(this)}><img src={language} width='20' style={{marginRight: '15px'}}/>{this.state.languages.filter(item => item.value !== this.state.curLang)[0].label}</Button>

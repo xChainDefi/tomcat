@@ -41,7 +41,7 @@ class BlockTxLayout extends Component {
       trade: props.drizzle.contracts.Trade,
       usdt: props.drizzle.contracts.Usdt,
       drizzleState: props.drizzle.store.getState(),
-      accountName: props.drizzleState.accounts[0],
+      accountName: props.drizzleState.accounts[0] != null ? props.drizzleState.accounts[0] : '0x0000000000000000000000000000000000000000',
       aNFTInfo: {totalSupply: 0, burnedAmount: 0, myAmount: 0, myTokenInfos: []},
       bNFTInfo: {totalSupply: 0, myAmount: 0, myTokenInfos: []},
       xTokenInfo: {totalSupply: 0, myPendingAmount: 0, liquidityAmount: 0, myAmount: 0, name: 'xToken', symbol: 'HDX', decimals: 18},
