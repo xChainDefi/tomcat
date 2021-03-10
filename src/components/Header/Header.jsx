@@ -8,7 +8,7 @@ import StyledMenu, {
   SubMenu
 } from '@icedesign/styled-menu';
 
-import { Button, Balloon } from '@alifd/next';
+import { Button, Balloon, Grid } from '@alifd/next';
 import cookie from 'react-cookies';
 import axios from 'axios';
 import { createHashHistory } from 'history';
@@ -27,6 +27,7 @@ import i18n from '../../i18n';
 import {withTranslation} from 'react-i18next';
 import nodeIcon from '../images/node.png';
 
+const { Row, Col } = Grid;
 export const history = createHashHistory();
 const keyMap = {'dashboard': '0', 'Block': '1', 'Transaction': '2', 'assetOperator': '3', 'contractDev': '4', 'producerList': '5'};
 
@@ -256,9 +257,14 @@ class Header extends Component {
           style={{ display: 'flex', alignItems: 'center' }}
         >
           {
-            this.props.drizzleState.accounts[0] ? <Balloon trigger={defaultTrigger} closable={false}>
-                                                    {this.props.drizzleState.accounts[0]}
-                                                  </Balloon>
+            this.props.drizzleState.accounts[0] ? <Row align='center'>
+                                                    <div class="static-btn">
+                                                      Heco
+                                                    </div>
+                                                    <Balloon trigger={defaultTrigger} closable={false}>
+                                                      {this.props.drizzleState.accounts[0]}
+                                                    </Balloon>
+                                                  </Row>
                                                     :
                                                   <div class="common-btn" style={{width: 90}} onClick={() => {this.initMetamaskNetwork();}}>
                                                     连接钱包

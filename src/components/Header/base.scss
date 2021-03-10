@@ -58,6 +58,24 @@
   }
 }
 
+.static-btn {
+  display:inline-block;
+  width: 60px;
+  height: 30px;
+  background: #03263a;
+  border-radius: 12px;
+  box-sizing: border-box;
+  color: #fff;
+  font-size: 14px;
+  padding: 5px 15px;
+  span {
+    float: left;
+  }
+  b {
+    float: right;
+  }
+}
+
 .common-btn {
   width: 120px;
   height: 30px;
