@@ -1,0 +1,35 @@
+$ice-text-color: #607d8b;
+$ice-sub-text-color: #91A1AF;
+.links{
+  a{
+    margin-right: 35px;
+    img{
+      width: 20px;
+    }
+    &:last-child{
+      margin-right: 0;
+    }
+  }
+}
+.siteService{
+  display: flex;
+  justify-content:flex-end;
+  flex-grow:1;
+  .listContain{
+    font-size: 14px;
+    color: $ice-text-color;
+    margin-left: 60px;
+    line-height: 20px;
+    &:first-child{
+      margin-left: 0;
+    }
+    .listTitle{
+      margin-bottom: 16px;
+    }
+    a{
+      display: block;
+      color: $ice-sub-text-color;
+      margin-bottom:8px;
+    }
+  }
+}
