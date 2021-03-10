@@ -20,6 +20,8 @@ import { Drizzle } from "@drizzle/store";
 import drizzleOptions from "./drizzleOptions";
 
 const drizzle = new Drizzle(drizzleOptions);
+console.log('drizzle', drizzle);
+
 const defaultLang = cookie.load('defaultLang');
 if (defaultLang != null) {
   setLang(defaultLang);
