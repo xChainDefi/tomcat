@@ -5,6 +5,7 @@ import React, { Component } from 'react';
 import IceContainer from '@icedesign/container';
 import { Dialog, Grid, Feedback } from '@icedesign/base';
 import { Input } from "@alifd/next";
+import Img from '@icedesign/img';
 import { connect } from 'react-redux';
 import { compose } from 'redux';
 import './DisplayCard.scss';
@@ -21,7 +22,8 @@ const { Row, Col } = Grid;
 const block = require('../../../../components/Common/images/block-white.png');
 const tx = require('../../../../components/Common/images/tx-white.png');
 const key = require('./images/key.png');
-const car = require('./images/car-1.png');
+const box = require('./images/box.png');
+const boxOpening = require('./images/opening1.jpeg');
 
 class BlockTxLayout extends Component {
   static displayName = '';
@@ -39,22 +41,26 @@ class BlockTxLayout extends Component {
       hdBNFT: props.drizzle.contracts.HDBNFT,
       xToken: props.drizzle.contracts.XToken,
       trade: props.drizzle.contracts.Trade,
+      mysteryBox: props.drizzle.contracts.MysteryBox,
       usdt: props.drizzle.contracts.Usdt,
       drizzleState: props.drizzle.store.getState(),
       accountName: props.drizzleState.accounts[0] != null ? props.drizzleState.accounts[0] : '0x0000000000000000000000000000000000000000',
       aNFTInfo: {totalSupply: 0, burnedAmount: 0, myAmount: 0, myTokenInfos: []},
-      bNFTInfo: {totalSupply: 0, myAmount: 0, myTokenInfos: []},
+      bNFTInfo: {totalSupply: 0, myAmount: 0, myTokenInfos: [], token2HeroId: {}},
       xTokenInfo: {totalSupply: 0, myPendingAmount: 0, liquidityAmount: 0, myAmount: 0, name: 'xToken', symbol: 'HDX', decimals: 18},
       buyANFTVisible: false,
       approvedUSDT: 0,
       approveTip: '授权USDT',
       approvingTip: '授权中...',
+      boxOpeningTip: '盲盒开启中...',
       curStakeId: null,
       swapANFT2HDWalletVisible: false,
       approvedANFT: 0,
       approveANFTTip: '授权aNFT',
       curANFTId: 0,
       boughtANFTNumber: 1,
+      curBNFTId: 0,
+      boxOpeningVisible: false,
     };
   }
   //发送交易：
@@ -109,7 +115,9 @@ class BlockTxLayout extends Component {
       bNFTInfo.myTokenInfos = [];
       for (var i = 0; i < v; i++) {
         const tokenId = await hdBNFT.methods.tokenOfOwnerByIndex(accountName, i).call();
+        const heroId = await hdBNFT.methods.nft2HeroIdMap(tokenId).call();
         bNFTInfo.myTokenInfos.push(tokenId);
+        bNFTInfo.token2HeroId[tokenId] = heroId;
       };
       this.setState({bNFTInfo});
     });
@@ -288,6 +296,29 @@ class BlockTxLayout extends Component {
     })
   }
 
+  openBox = (bNFTId) => {
+    const { accountName, hdBNFT, mysteryBox } = this.state;
+    hdBNFT.methods.nft2HeroIdMap(bNFTId).call().then(heroId => {
+      if (heroId > 0) {
+        Feedback.toast.error('宝盒已开启');
+      } else {
+        const curStakeId = mysteryBox.methods["openBox"].cacheSend(bNFTId, 
+                                                                  {from: accountName});
+        
+        this.setState({curStakeId, boxOpeningVisible: true});
+        this.syncTxStatus(() => {
+        hdBNFT.methods.nft2HeroIdMap(bNFTId).call().then(v => {
+          this.updateBNFTData();
+          this.setState({boxOpeningVisible: false});
+        });
+        }, () => { 
+          Feedback.toast.error('宝盒开启失败');
+          this.setState({boxOpeningVisible: false});
+        })
+      }
+    });
+  }
+
   swapANFT2HDWallet = () => {
     this.submitSwapReq();
   }
@@ -457,7 +488,7 @@ class BlockTxLayout extends Component {
             <div className='nft-title'> 
               <img src={block} width='24'/>
               <b style={{fontSize: 20}}>{T('您的aNFT')}</b>
-              <div class="common-btn" onClick={() => this.openBuyANFTDialog()}>
+              <div class="common-btn" onClick={() => this.openBuyANFTDialog()} title="10U/aNFT">
                 购买
               </div>
             </div>
@@ -491,12 +522,21 @@ class BlockTxLayout extends Component {
             <div className='nft-list'>
               <ul>
               {
-                this.state.bNFTInfo.myTokenInfos.map(tokenInfo => {
-                  return (
+                this.state.bNFTInfo.myTokenInfos.map(bNftId => {
+                  // const bNftId = tokenInfo.tokenId;
+                  const heroId = this.state.bNFTInfo.token2HeroId[bNftId];
+
+                  return ( (heroId != null && heroId > 0) ?
                       <li>
-                        <img src={car} width='200'/>
-                        <h2 style={{marginTop: -20}}>ID: {tokenInfo}</h2>                      
-                      </li>)
+                        <img src={'https://doulaig.oss-cn-hangzhou.aliyuncs.com/heros/' + bNftId + '.png'} width='250'/>
+                        <h2 style={{marginTop: -20}}>ID: {bNftId}</h2>                      
+                      </li>
+                        :
+                      <li>
+                        <img src={box} width='180' title='点击开宝盒' onClick={() => this.openBox(bNftId)}/>
+                        <h2 style={{marginTop: -20}}>ID: {bNftId}</h2>                      
+                      </li>
+                      )
                 })
               }
               </ul>
@@ -581,6 +621,13 @@ class BlockTxLayout extends Component {
             showLimitHint
           />
         </Dialog>
+        <div className={this.state.boxOpeningVisible ? 'imgDisplayDiv' : 'imgNoneDiv'}>
+          <Img
+            enableAliCDNSuffix={true}
+            src={boxOpening}
+            type='contain'
+          />
+        </div>
       </div>
     );
   }

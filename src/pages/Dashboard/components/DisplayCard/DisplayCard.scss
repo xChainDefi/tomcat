@@ -164,6 +164,9 @@
       text-align: center;
       img {
         padding-top: 10px;
+        &:hover {
+          cursor: pointer;
+        }
       }
       h2 {
         height: 28px;
@@ -276,5 +279,26 @@
   margin-top: 20px;
   input{
     padding-left:5px!important;
+  }
+}
+
+.imgNoneDiv {
+  img{
+    display: none;
+  }
+}
+.imgDisplayDiv {
+  display:inline-block;
+  vertical-align:middle;
+  img{
+    // position: absolute;
+    // top: 50%;
+    // margin-top: -50px;
+    position: absolute;
+    left: 0;
+    margin-left: 0;
+    top: 450px;
+    //margin-top: 0;
+    z-index: 2;
   }
 }
