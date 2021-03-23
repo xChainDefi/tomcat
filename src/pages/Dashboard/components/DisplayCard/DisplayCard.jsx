@@ -17,6 +17,7 @@ import { getLatestBlock, getTransactionsNum } from './actions';
 import reducer from './reducer';
 import { T } from '../../../../utils/lang';
 import BigNumber from "bignumber.js";
+import herosName from './heroname.json';
 
 const { Row, Col } = Grid;
 const block = require('../../../../components/Common/images/block-white.png');
@@ -61,6 +62,7 @@ class BlockTxLayout extends Component {
       boughtANFTNumber: 1,
       curBNFTId: 0,
       boxOpeningVisible: false,
+      heroLevel: {}
     };
   }
   //发送交易：
@@ -103,7 +105,7 @@ class BlockTxLayout extends Component {
   }
 
   updateBNFTData = () => {
-    const {hdBNFT, accountName} = this.state;
+    const {hdBNFT, mysteryBox, accountName} = this.state;
     const {bNFTInfo} = this.state;
 
     hdBNFT.methods.totalSupply().call().then(v => {
@@ -116,8 +118,10 @@ class BlockTxLayout extends Component {
       for (var i = 0; i < v; i++) {
         const tokenId = await hdBNFT.methods.tokenOfOwnerByIndex(accountName, i).call();
         const heroId = await hdBNFT.methods.nft2HeroIdMap(tokenId).call();
+        const roleLevel = await mysteryBox.methods.heroId2LevelMap(heroId).call();
         bNFTInfo.myTokenInfos.push(tokenId);
         bNFTInfo.token2HeroId[tokenId] = heroId;
+        this.state.heroLevel[heroId] = roleLevel;
       };
       this.setState({bNFTInfo});
     });
@@ -522,14 +526,19 @@ class BlockTxLayout extends Component {
             <div className='nft-list'>
               <ul>
               {
-                this.state.bNFTInfo.myTokenInfos.map(bNftId => {
+                this.state.bNFTInfo.myTokenInfos.map((bNftId) => {
                   // const bNftId = tokenInfo.tokenId;
                   const heroId = this.state.bNFTInfo.token2HeroId[bNftId];
-
+                  //const roleLevel = 1;//await this.state.mysteryBox.methods.heroId2LevelMap(heroId).call();
                   return ( (heroId != null && heroId > 0) ?
                       <li>
-                        <img src={'https://doulaig.oss-cn-hangzhou.aliyuncs.com/heros/' + bNftId + '.png'} width='250'/>
-                        <h2 style={{marginTop: -20}}>ID: {bNftId}</h2>                      
+                        <div class="role-level">
+                          {this.state.heroLevel[heroId]}级
+                        </div>
+                        <img style={{marginTop: -10}} src={'https://doulaig.oss-cn-hangzhou.aliyuncs.com/heros/' + heroId + '.png'} width='250'/>
+                        
+                        <h2 style={{marginTop: -25}}>ID: {bNftId}</h2>    
+                        <h2 style={{marginTop: -10}}>{herosName[heroId]}</h2>                  
                       </li>
                         :
                       <li>

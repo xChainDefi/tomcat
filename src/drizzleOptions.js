@@ -25,7 +25,7 @@ XToken.contractName = 'XToken';
 Trade.networks['128'] = {address: '0xA3b584668f5d787C1FE6c7A7AC05b66931bA8e20'};
 Trade.contractName = 'Trade';
 
-MysteryBox.networks['128'] = {address: '0x0dABBC9901E60B4Bf258eE1c2d24EC35c55d7b94'};
+MysteryBox.networks['128'] = {address: '0x474515b2e8627cb0f8EE904Eb05f20b74A34C763'};
 MysteryBox.contractName = 'MysteryBox';
 
 Usdt.networks['128'] = {address: '0xa71EdC38d189767582C38A3145b5873052c3e47a'};
