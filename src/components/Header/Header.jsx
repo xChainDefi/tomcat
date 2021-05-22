@@ -143,6 +143,13 @@ class Header extends Component {
         try {
           // 请求用户授权
           await window.ethereum.enable();
+          ethereum.on("chainChanged", (chainId) => {
+            history.go(0);
+          });// MetaMask地址变化时，要刷新网站
+          ethereum.on("accountsChanged", (chainId) => {
+            history.go(0);
+          });
+          console.log('networkVersion', window.ethereum.networkVersion);
           if (window.ethereum.networkVersion != '128') {
             Feedback.toast.error("请将MetaMask连接到Heco网络，否则您无法正常使用本网站");
           } else {
