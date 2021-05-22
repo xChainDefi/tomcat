@@ -46,7 +46,7 @@ class BlockTxLayout extends Component {
 
       tomCatNFTInfo: {totalSupply: 0, breedingCatNum: 0, sellingCatNum: 0},  // 总量，种猫数量，正在交易中的猫数量
       tradeMarketInfo: {totalAmount: 0, dealCount: 0, breedingOwnerFee: 0, sellingCatInfos: {}},    // 总交易金额，总交易量，种猫拥有者的手续费收入
-      myInfo: {totalAmount:0, sellingCatNum: 0, breedingFeeAmount: 0, myCatIds: [], mySellingCatIds: []},         // 账户拥有的猫总数，出售中猫咪数量，以及种猫手续费收入
+      myInfo: {totalAmount:0, sellingCatNum: 0, breedingFeeAmount: 0, myCatInfos: [], mySellingCatInfos: []},         // 账户拥有的猫总数，出售中猫咪数量，以及种猫手续费收入
       catInfo: {},
       approveTomERC20Tip: '授权Tom代币', 
       approveCatNFTTip: '授权猫咪NFT', 
@@ -143,18 +143,38 @@ class BlockTxLayout extends Component {
     tradeMarket.methods.sellingCatsNumber(accountAddr).call().then(v => {
       myInfo.sellingCatNum = v;
       tradeMarket.methods.getSellingCats(accountAddr, 0, parseInt(v)).call().then(ids => {
-        myInfo.mySellingCatIds = ids;
+        ids.map(catId => {
+          tomCatNFT.methods.id2CatInfoMap(catId).call().then(catInfo => {
+            if (myInfo.mySellingCatInfos[catId] == null) {
+              myInfo.mySellingCatInfos[catId] = {};
+            }
+            myInfo.mySellingCatInfos[catId].name = catInfo.name;
+            myInfo.mySellingCatInfos[catId].desc = catInfo.desc;
+            myInfo.mySellingCatInfos[catId].isBreeding = catInfo.isBreeding;
+            myInfo.mySellingCatInfos[catId].motherId = catInfo.motherId;
+            this.setState({myInfo});
+          });
+        })
         motherInfos.push(...ids);
         this.setState({myInfo, motherInfos});
       });
+
       tomCatNFT.methods.balanceOf(accountAddr).call().then(amount => {
         myInfo.totalAmount = parseInt(amount) + parseInt(myInfo.sellingCatNum);
         this.setState({myInfo});
-        myInfo.myCatIds = [];
         for (var i = 0; i < parseInt(amount); i++) {
-          tomCatNFT.methods.tokenOfOwnerByIndex(accountAddr, i).call().then(id => {
-            myInfo.myCatIds.push(id);
-            motherInfos.push(id);
+          tomCatNFT.methods.tokenOfOwnerByIndex(accountAddr, i).call().then(catId => {
+            tomCatNFT.methods.id2CatInfoMap(catId).call().then(catInfo => {
+              if (myInfo.myCatInfos[catId] == null) {
+                myInfo.myCatInfos[catId] = {};
+              }
+              myInfo.myCatInfos[catId].name = catInfo.name;
+              myInfo.myCatInfos[catId].desc = catInfo.desc;
+              myInfo.myCatInfos[catId].isBreeding = catInfo.isBreeding;
+              myInfo.myCatInfos[catId].motherId = catInfo.motherId;
+              this.setState({myInfo});
+            });
+            motherInfos.push(catId);
             this.setState({myInfo, motherInfos});
           });
         }
@@ -209,7 +229,7 @@ class BlockTxLayout extends Component {
       return;
     }
     const motherId = this.state.selectedMotherId == null ? 0 : parseInt(this.state.selectedMotherId);
-    this.state.curStakeId = tomCatNFT.methods["mint"].cacheSend(this.state.createdCatName, this.state.catPic, this.state.selectedMotherId, this.state.isBreeding, {from: accountAddr});
+    this.state.curStakeId = tomCatNFT.methods["mint"].cacheSend(this.state.createdCatName, this.state.catPic, motherId, this.state.isBreeding, {from: accountAddr});
     this.syncTxStatus(() => {
       this.updateTomCatData();
       this.updateMyInfo();
@@ -376,6 +396,10 @@ class BlockTxLayout extends Component {
     })
   }
 
+  dispayAncestor = (catNFTId) => {
+    
+  }
+
   openBox = (bNFTId) => {
     const { accountName, hdBNFT, mysteryBox } = this.state;
     hdBNFT.methods.nft2HeroIdMap(bNFTId).call().then(heroId => {
@@ -455,12 +479,29 @@ class BlockTxLayout extends Component {
 
   render() {
     const { sellingCatInfos } = this.state.tradeMarketInfo;
-    const catInfos = [];
+    const { myCatInfos, mySellingCatInfos } = this.state.myInfo;
+
+    const inMarketCatInfos = [];
     for(var id in sellingCatInfos) {
       const catInfo = sellingCatInfos[id];
       catInfo.id = id;
-      catInfos.push(catInfo);
+      inMarketCatInfos.push(catInfo);
     }
+
+    const myCatInfoList = [];
+    for(var id in myCatInfos) {
+      const catInfo = myCatInfos[id];
+      catInfo.id = id;
+      catInfo.bSelling = true;
+      myCatInfoList.push(catInfo);
+    }
+    for(var id in mySellingCatInfos) {
+      const catInfo = mySellingCatInfos[id];
+      catInfo.id = id;
+      catInfo.bSelling = false;
+      myCatInfoList.push(catInfo);
+    }
+
     return (
       <div style={styles.container}>
         <div className='containMain'>
@@ -582,31 +623,22 @@ class BlockTxLayout extends Component {
             <div className='nft-list'>
               <ul>
               {
-                this.state.myInfo.mySellingCatIds.map(catId => {
+                myCatInfoList.map(catInfo => {
                   return (
                       <li>
                         <img src={key} width='80'/>
-                        <h2>ID: {catId}</h2>
+                        <h2>{catInfo.name}(ID:{catInfo.id})</h2>
+                        
                         <div class="info-div">
-                          <p>名称: AAA-{catId}</p>
+                          <p>是否种猫: {catInfo.isBreeding ? '是' : '否'}</p>
                         </div>
-                        <div class="process-div" onClick={() => this.cancelOrder(catId)}>
-                        取消出售
+
+                        <div class="display-ancestor" onClick={() => this.dispayAncestor(catInfo.id)}>
+                        显示族谱
                         </div>
-                      </li>)
-                })
-              }
-              {
-                this.state.myInfo.myCatIds.map(catId => {
-                  return (
-                      <li>
-                        <img src={key} width='80'/>
-                        <h2>ID: {catId}</h2>
-                        <div class="info-div">
-                          <p>名称: CCC-{catId}</p>
-                        </div>
-                        <div class="process-div" onClick={() => this.sellCat(catId)}>
-                        出售
+
+                        <div class="process-div" onClick={() => {catInfo.bSelling ? this.cancelOrder(catInfo.id) : this.sellCat(catInfo.id)}}>
+                        {catInfo.bSelling ? '取消出售' : '出售'}
                         </div>
                       </li>)
                 })
@@ -625,7 +657,7 @@ class BlockTxLayout extends Component {
             <div className='nft-list'>
               <ul>
               {
-                catInfos.map(catInfo => {
+                inMarketCatInfos.map(catInfo => {
                   return (
                       <li>
                         <img src={key} width='80'/>
