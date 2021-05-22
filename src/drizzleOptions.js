@@ -1,35 +1,13 @@
 import Web3 from "web3";
-import HDANFT from "./contracts/HDANFT.json";
-import HDBNFT from "./contracts/HDBNFT.json";
-import XToken from "./contracts/XToken.json";
-import Trade from "./contracts/Trade.json";
-import MysteryBox from "./contracts/MysteryBox.json";
-import Usdt from "./contracts/ERC20.json";
+import TomCatNFT from "./contracts/TomCatNFT.json";
+import TradeMarket from "./contracts/TradeMarket.json";
+import TomERC20 from "./contracts/ERC20.json";
 
-HDANFT.networks = {}
-HDBNFT.networks = {}
-XToken.networks = {}
-Trade.networks = {}
-MysteryBox.networks = {}
-Usdt.networks = {}
+TomCatNFT.networks['128'] = {address: '0xb99fD33a13e4402c10eBE32a3B8b399d6f3aBD3b'};
 
-HDANFT.networks['128'] = {address: '0xccFdF798Cf15A08aB2404dA32406E08Ac1BdCCfd'};
-HDANFT.contractName = 'HDANFT';
+TradeMarket.networks['128'] = {address: '0xF62dF8eC20D59111C5d8a3397558a21bE35ffe61'};
 
-HDBNFT.networks['128'] = {address: '0xCfF02924E44303756758148c515e024f3a690ea2'};
-HDBNFT.contractName = 'HDBNFT';
-
-XToken.networks['128'] = {address: '0xD03d4C1cb22be63689BB3Fb89a9d9296dB36E06c'};
-XToken.contractName = 'XToken';
-
-Trade.networks['128'] = {address: '0xA3b584668f5d787C1FE6c7A7AC05b66931bA8e20'};
-Trade.contractName = 'Trade';
-
-MysteryBox.networks['128'] = {address: '0x474515b2e8627cb0f8EE904Eb05f20b74A34C763'};
-MysteryBox.contractName = 'MysteryBox';
-
-Usdt.networks['128'] = {address: '0xa71EdC38d189767582C38A3145b5873052c3e47a'};
-Usdt.contractName = 'Usdt';
+TomERC20.networks['128'] = {address: '0x391942D8a0CA5ceF6C1D3355A27E2814060a8a7a'};
 
 
 const options = {
@@ -38,10 +16,12 @@ const options = {
     customProvider: new Web3(window.ethereum),
   },
   contracts: [
-    HDANFT, HDBNFT, XToken, Trade, MysteryBox, Usdt
+    TomCatNFT, TradeMarket, TomERC20
   ],
   events: {
-    
+    TomCatNFT: [],
+    TradeMarket: [],
+    TomERC20: []
   },
   polls: {
     blocks: 3000,

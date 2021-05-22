@@ -51,22 +51,18 @@ class Header extends Component {
       customNodeDisabled: true,
       languages: [{value: 'zh', label:'中文'}, {value: 'en', label:'English'}],
       defaultLang,
-      curLang: defaultLang,
-      nodes: [{value: constant.mainNetRPCHttpsAddr, label:T('主网') + ':' + constant.mainNetRPCHttpsAddr}, 
-              {value: constant.testNetRPCHttpsAddr, label:T('测试网') + ':' + constant.testNetRPCHttpsAddr}, 
-              {value: constant.LocalRPCAddr, label:T('本地节点') + ':' + constant.LocalRPCAddr}, 
-              {value: 'others', label: T('自定义')}],
+      curLang: defaultLang
     };
     setLang(this.state.defaultLang);
   }
   componentDidMount = () => {
-    if(this.state.defaultLang && this.state.defaultLang !== localStorage.getItem('i18nextLng')){
-      i18n.changeLanguage(this.state.defaultLang);
-      this.setState({
-        ...this.state,
-        curLang: this.state.defaultLang
-      })
-    }
+    // if(this.state.defaultLang && this.state.defaultLang !== localStorage.getItem('i18nextLng')){
+    //   i18n.changeLanguage(this.state.defaultLang);
+    //   this.setState({
+    //     ...this.state,
+    //     curLang: this.state.defaultLang
+    //   })
+    // }
   }
 
   componentWillReceiveProps(nextProps) {

@@ -3,14 +3,13 @@
 /* eslint react/jsx-no-target-blank: 0 */
 import React, { Component } from 'react';
 import IceContainer from '@icedesign/container';
-import { Dialog, Grid, Feedback } from '@icedesign/base';
-import { Input } from "@alifd/next";
+import { Dialog, Grid, Feedback, Select } from '@icedesign/base';
+import { Input, Checkbox } from "@alifd/next";
 import Img from '@icedesign/img';
 import { connect } from 'react-redux';
 import { compose } from 'redux';
 import './DisplayCard.scss';
 import EthCrypto from 'eth-crypto';
-import cn from 'classnames';
 import * as utils from '../../../../utils/utils'; 
 import injectReducer from '../../../../utils/injectReducer';
 import { getLatestBlock, getTransactionsNum } from './actions';
@@ -20,9 +19,10 @@ import BigNumber from "bignumber.js";
 import herosName from './heroname.json';
 
 const { Row, Col } = Grid;
+const producer = require('./images/producers.png');
 const block = require('../../../../components/Common/images/block-white.png');
 const tx = require('../../../../components/Common/images/tx-white.png');
-const key = require('./images/key.png');
+const key = require('./images/cat.png');
 const box = require('./images/box.png');
 const boxOpening = require('./images/opening1.jpeg');
 
@@ -35,34 +35,29 @@ class BlockTxLayout extends Component {
 
   constructor(props) {
     super(props);
-    this.state = {
-      deadAddr: '0x000000000000000000000000000000000000dEaD',
-      publicKey: '',
-      hdANFT: props.drizzle.contracts.HDANFT,
-      hdBNFT: props.drizzle.contracts.HDBNFT,
-      xToken: props.drizzle.contracts.XToken,
-      trade: props.drizzle.contracts.Trade,
-      mysteryBox: props.drizzle.contracts.MysteryBox,
-      usdt: props.drizzle.contracts.Usdt,
+    this.state = {      
+      approveTip: '授权TOM',
+      tomCatNFT: props.drizzle.contracts.TomCatNFT,
+      tradeMarket: props.drizzle.contracts.TradeMarket,
+      tomERC20: props.drizzle.contracts.TomERC20,
+
       drizzleState: props.drizzle.store.getState(),
-      accountName: props.drizzleState.accounts[0] != null ? props.drizzleState.accounts[0] : '0x0000000000000000000000000000000000000000',
-      aNFTInfo: {totalSupply: 0, burnedAmount: 0, myAmount: 0, myTokenInfos: []},
-      bNFTInfo: {totalSupply: 0, myAmount: 0, myTokenInfos: [], token2HeroId: {}},
-      xTokenInfo: {totalSupply: 0, myPendingAmount: 0, liquidityAmount: 0, myAmount: 0, name: 'xToken', symbol: 'HDX', decimals: 18},
-      buyANFTVisible: false,
-      approvedUSDT: 0,
-      approveTip: '授权USDT',
-      approvingTip: '授权中...',
-      boxOpeningTip: '盲盒开启中...',
-      curStakeId: null,
-      swapANFT2HDWalletVisible: false,
-      approvedANFT: 0,
-      approveANFTTip: '授权aNFT',
-      curANFTId: 0,
-      boughtANFTNumber: 1,
-      curBNFTId: 0,
-      boxOpeningVisible: false,
-      heroLevel: {}
+      accountAddr: props.drizzleState.accounts[0] != null ? props.drizzleState.accounts[0] : '0x0000000000000000000000000000000000000000',
+
+      tomCatNFTInfo: {totalSupply: 0, breedingCatNum: 0, sellingCatNum: 0},  // 总量，种猫数量，正在交易中的猫数量
+      tradeMarketInfo: {totalAmount: 0, dealCount: 0, breedingOwnerFee: 0, sellingCatInfos: {}},    // 总交易金额，总交易量，种猫拥有者的手续费收入
+      myInfo: {totalAmount:0, sellingCatNum: 0, breedingFeeAmount: 0, myCatIds: [], mySellingCatIds: []},         // 账户拥有的猫总数，出售中猫咪数量，以及种猫手续费收入
+      catInfo: {},
+      approveTomERC20Tip: '授权Tom代币', 
+      approveCatNFTTip: '授权猫咪NFT', 
+      approvingTip: '授权中',
+      curCatNFTId: 0,
+      priceDescending: true,
+      pageSize: 10,
+      curPage: 0,
+      approvedTom: 0,
+      isBreeding: false,
+      motherInfos: []
     };
   }
   //发送交易：
@@ -71,101 +66,108 @@ class BlockTxLayout extends Component {
   //   const txHash = this.props.drizzleState.transactionStack[this.state.stackId];
   //   this.props.drizzleState.transactions[txHash].status
   componentDidMount = () => {
-    this.state.publicKey = EthCrypto.publicKeyByPrivateKey('0x7c0ec026d465f83aed3a05874ee0b95c731046303cc9abef32685b3dabe35db3');
-    this.updateANFTData();
-    this.updateBNFTData();
-    this.updateXTokenInfo();
+    this.updateTomCatData();
+    this.updateTradeMarketData();
+    this.updateMyInfo();
 
     setInterval(() => {
-      this.updateXTokenInfo();
-    }, 3000);
+      this.updateMyInfo();
+      this.updateTomCatData();
+      this.updateTradeMarketData();
+    }, 60000);
   }
 
-  updateANFTData = () => {
-    const {hdANFT, trade, deadAddr, accountName} = this.state;
-    const {aNFTInfo} = this.state;
-    hdANFT.methods.totalSupply().call().then(v => {
-      aNFTInfo.totalSupply = v;
-      this.setState({aNFTInfo});
-    });
-    hdANFT.methods.balanceOf(deadAddr).call().then(v => {
-      aNFTInfo.burnedAmount = v;
-      this.setState({aNFTInfo});
-    });
-    hdANFT.methods.balanceOf(accountName).call().then(async (v) => {
-      aNFTInfo.myAmount = v;
-      aNFTInfo.myTokenInfos = [];
-      for (var i = 0; i < v; i++) {
-        const tokenId = await hdANFT.methods.tokenOfOwnerByIndex(accountName, i).call();
-        const tokenInfo = await trade.methods.userXTokenList(tokenId - 1).call();
-        aNFTInfo.myTokenInfos.push(tokenInfo);
-      }
-      this.setState({aNFTInfo});
-    });
-  }
+  updateTomCatData = () => {
+    const { tomCatNFT, tradeMarket, tomCatNFTInfo, tradeMarketInfo, priceDescending, pageSize } = this.state;
 
-  updateBNFTData = () => {
-    const {hdBNFT, mysteryBox, accountName} = this.state;
-    const {bNFTInfo} = this.state;
-
-    hdBNFT.methods.totalSupply().call().then(v => {
-      bNFTInfo.totalSupply = v;
-      this.setState({bNFTInfo});
+    tomCatNFT.methods.totalSupply().call().then(v => {
+      tomCatNFTInfo.totalSupply = v;
+      this.setState({tomCatNFTInfo});
     });
-    hdBNFT.methods.balanceOf(accountName).call().then(async (v) => {
-      bNFTInfo.myAmount = v;
-      bNFTInfo.myTokenInfos = [];
-      for (var i = 0; i < v; i++) {
-        const tokenId = await hdBNFT.methods.tokenOfOwnerByIndex(accountName, i).call();
-        const heroId = await hdBNFT.methods.nft2HeroIdMap(tokenId).call();
-        const roleLevel = await mysteryBox.methods.heroId2LevelMap(heroId).call();
-        bNFTInfo.myTokenInfos.push(tokenId);
-        bNFTInfo.token2HeroId[tokenId] = heroId;
-        this.state.heroLevel[heroId] = roleLevel;
-      };
-      this.setState({bNFTInfo});
+    tomCatNFT.methods.breedingCatAmount().call().then(v => {
+      tomCatNFTInfo.breedingCatNum = v;
+      this.setState({tomCatNFTInfo});
+    });
+    tomCatNFT.methods.balanceOf(tradeMarket.address).call().then(async (v) => {
+      tomCatNFTInfo.sellingCatNum = parseInt(v);
+      this.setState({tomCatNFTInfo});
+      tradeMarketInfo.sellingCatIds = [];
+      
+      tradeMarket.methods.getOrderIds(0, pageSize < tomCatNFTInfo.sellingCatNum ? pageSize : tomCatNFTInfo.sellingCatNum, priceDescending).call().then(catIds => {
+        catIds.map(catId => {
+          tomCatNFT.methods.id2CatInfoMap(catId).call().then(catInfo => {
+            if (tradeMarketInfo.sellingCatInfos[catId] == null) {
+              tradeMarketInfo.sellingCatInfos[catId] = {};
+            }
+            tradeMarketInfo.sellingCatInfos[catId].name = catInfo.name;
+            tradeMarketInfo.sellingCatInfos[catId].desc = catInfo.desc;
+            tradeMarketInfo.sellingCatInfos[catId].isBreeding = catInfo.isBreeding;
+            tradeMarketInfo.sellingCatInfos[catId].motherId = catInfo.motherId;
+            this.setState({tradeMarketInfo});
+          });
+          tradeMarket.methods.tokenOrderMap(catId).call().then(catInfo => {
+            if (tradeMarketInfo.sellingCatInfos[catId] == null) {
+              tradeMarketInfo.sellingCatInfos[catId] = {};
+            }
+            tradeMarketInfo.sellingCatInfos[catId].price = catInfo.price;
+            this.setState({tradeMarketInfo});
+          });
+        });
+      });
     });
   }
 
-  updateXTokenInfo = () => {
-    const {xToken, accountName} = this.state;
-    const {trade, xTokenInfo} = this.state;
-
-    xToken.methods.totalSupply().call().then(v => {
-      xTokenInfo.totalSupply = v;
-      this.setState({xTokenInfo});
+  updateTradeMarketData = () => {
+    const { tradeMarket, tradeMarketInfo } = this.state;
+    
+    tradeMarket.methods.totalAmount().call().then(v => {
+      tradeMarketInfo.totalAmount = v;
+      this.setState({tradeMarketInfo});
     });
-    xToken.methods.name().call().then(v => {
-      xTokenInfo.name = v;
-      this.setState({xTokenInfo});
+    tradeMarket.methods.breedingOwnerFee().call().then(v => {
+      tradeMarketInfo.breedingOwnerFee = v;
+      this.setState({tradeMarketInfo});
     });
-    xToken.methods.symbol().call().then(v => {
-      xTokenInfo.symbol = v;
-      this.setState({xTokenInfo});
-    });
-    xToken.methods.balanceOf(trade.address).call().then(v => {
-      xTokenInfo.liquidityAmount = v;
-      this.setState({xTokenInfo});
-    });
-    trade.methods.pendingXToken().call().then(v => {
-      xTokenInfo.myPendingAmount = v;
-      this.setState({xTokenInfo});
-    });
-    return xToken.methods.balanceOf(accountName).call().then(v => {
-      xTokenInfo.myAmount = v;
-      this.setState({xTokenInfo});
-      return v;
+    tradeMarket.methods.getDealedOrderNumber().call().then(v => {
+      tradeMarketInfo.dealCount = v;
+      this.setState({tradeMarketInfo});
     });
   }
 
-  getMyXTokenNumber = () => {
-    const {xToken, accountName} = this.state;
+  updateMyInfo = () => {
+    const { tomCatNFT, tradeMarket, myInfo, accountAddr } = this.state;
+    var { motherInfos } = this.state;
+    if (accountAddr == '0x0000000000000000000000000000000000000000') return;
 
-    return xToken.methods.balanceOf(accountName).call();
+    motherInfos = [0];
+    tradeMarket.methods.sellingCatsNumber(accountAddr).call().then(v => {
+      myInfo.sellingCatNum = v;
+      tradeMarket.methods.getSellingCats(accountAddr, 0, parseInt(v)).call().then(ids => {
+        myInfo.mySellingCatIds = ids;
+        motherInfos.push(...ids);
+        this.setState({myInfo, motherInfos});
+      });
+      tomCatNFT.methods.balanceOf(accountAddr).call().then(amount => {
+        myInfo.totalAmount = parseInt(amount) + parseInt(myInfo.sellingCatNum);
+        this.setState({myInfo});
+        myInfo.myCatIds = [];
+        for (var i = 0; i < parseInt(amount); i++) {
+          tomCatNFT.methods.tokenOfOwnerByIndex(accountAddr, i).call().then(id => {
+            myInfo.myCatIds.push(id);
+            motherInfos.push(id);
+            this.setState({myInfo, motherInfos});
+          });
+        }
+      });
+    });
+    tradeMarket.methods.breedingCatOwnerFeeMap(accountAddr).call().then(v => {
+      myInfo.breedingFeeAmount = v;
+      this.setState({myInfo});
+    });
   }
 
   submitSwapReq = () => {
-    const {trade, accountName, curANFTId} = this.state;
+    const {trade, accountName, curCatNFTId} = this.state;
     try {
       if (utils.isEmptyObj(this.state.userName)) {
         Feedback.toast.error(T('请输入收货人'));
@@ -182,7 +184,7 @@ class BlockTxLayout extends Component {
       const deliverInfo = this.state.userName + '; ' + this.state.deliverAddress + '; ' + this.state.contactInfo;
       EthCrypto.encryptWithPublicKey(this.state.publicKey, deliverInfo).then(encryptedInfo => {
         console.log('encryptedInfo', encryptedInfo);  
-        this.state.curStakeId = trade.methods["burnANFT4HD"].cacheSend(JSON.stringify(encryptedInfo), curANFTId, {from: accountName});
+        this.state.curStakeId = trade.methods["burnANFT4HD"].cacheSend(JSON.stringify(encryptedInfo), curCatNFTId, {from: accountName});
         this.syncTxStatus(() => {
           this.updateANFTData();
           this.updateBNFTData();
@@ -196,36 +198,66 @@ class BlockTxLayout extends Component {
     }
   };
 
-  buyANFT = () => {
-    const {trade, accountName, xTokenInfo} = this.state;
-    if (utils.isEmptyObj(this.state.boughtANFTNumber)) {
-      Feedback.toast.error(T('请输入购买数量'));
+  createCatNFT = () => {
+    const {accountAddr, tomCatNFT} = this.state;
+    if (utils.isEmptyObj(this.state.createdCatName)) {
+      Feedback.toast.error(T('请输入猫咪名称'));
       return;
     }
-    const aNFTNumber = parseInt(this.state.boughtANFTNumber);
-    if (aNFTNumber < 1) {
-      Feedback.toast.error(T('购买数量不可小于1'));
+    if (utils.isEmptyObj(this.state.catPic)) {
+      Feedback.toast.error(T('请输入猫咪头像url'));
       return;
     }
-    this.state.curStakeId = trade.methods["buyANFT"].cacheSend(aNFTNumber, {from: accountName});
+    const motherId = this.state.selectedMotherId == null ? 0 : parseInt(this.state.selectedMotherId);
+    this.state.curStakeId = tomCatNFT.methods["mint"].cacheSend(this.state.createdCatName, this.state.catPic, this.state.selectedMotherId, this.state.isBreeding, {from: accountAddr});
     this.syncTxStatus(() => {
-      this.updateXTokenInfo();
-      this.updateANFTData();
+      this.updateTomCatData();
+      this.updateMyInfo();
     }, () => {})
   }
 
-  openBuyANFTDialog = () => {
-    const {trade, usdt, accountName} = this.state;
-    usdt.methods.allowance(accountName, trade.address).call().then(v => {
-      this.setState({approvedUSDT: v, buyANFTVisible: true});
+  sellCat = (catId) => {
+    const {tomCatNFT, accountAddr, tradeMarket} = this.state;
+    this.state.curCatNFTId = catId;
+    tomCatNFT.methods.isApprovedForAll(accountAddr, tradeMarket.address).call().then(v => {
+      this.setState({approvedTomCatNFT: v});
     });
+    this.setState({sellCatNFTVisible: true});
+  }
+
+  getMoreCatNFT = () => {
+    const {accountAddr, tradeMarket} = this.state;
+
+  }
+
+  buyCat = (catId, price) => {
+    const {tradeMarket, accountAddr, tomERC20} = this.state;
+    this.state.curCatNFTId = catId;
+    tomERC20.methods.allowance(accountAddr, tradeMarket.address).call().then(amount => {
+      if (new BigNumber(amount).gt(new BigNumber(price))) {
+        this.state.curStakeId = tradeMarket.methods["buyCat"].cacheSend(catId, {from: accountAddr});
+        this.syncTxStatus(() => {
+          this.updateTomCatData();
+          this.updateTradeMarketData();
+          this.updateMyInfo();
+        }, () => {});
+      } else {
+        this.setState({buyCatNFTVisible: true});
+      }
+    })
+    
+  }
+
+  openCreateCatNFTDialog = () => {
+    const {trade, tomERC20, accountAddr} = this.state;
+    this.setState({createCatNFTVisible: true});
   }
 
   swap2HDWallet = (aNFTId) => {
     const {trade, hdANFT} = this.state;
-    this.state.curANFTId = aNFTId;
+    this.state.curCatNFTId = aNFTId;
     hdANFT.methods.getApproved(aNFTId).call().then(v => {
-      this.setState({approvedANFT: trade.address == v, swapANFT2HDWalletVisible: true});
+      this.setState({approvedTomCatNFT: trade.address == v, swapANFT2HDWalletVisible: true});
     });
   }
 
@@ -244,8 +276,16 @@ class BlockTxLayout extends Component {
     }, () => {})
   }
 
-  handleANFTNumberChange = (v) => {
-    this.state.boughtANFTNumber = v;
+  handleCatNameChange = (v) => {
+    this.state.createdCatName = v;
+  }
+
+  handleCatPicChange = (v) => {
+    this.state.catPic = v;
+  }
+
+  handleMotherIdChanged = (v) => {
+    this.state.selectedMotherId = v;
   }
 
   handleUserNameChange = (v) => {
@@ -260,43 +300,79 @@ class BlockTxLayout extends Component {
     this.state.contactInfo = v;
   }
 
-  onBuyANFTOK = () => {
-    this.setState({buyANFTVisible: false});
+  onCreateCatNFTOK = () => {
+    this.setState({createCatNFTVisible: false});
   }
 
   onSwapANFTOK = () => {
     this.setState({swapANFT2HDWalletVisible: false});
   }
 
-  approveUSDT = () => {
-    const {trade, usdt, accountName, approveTip, approvingTip} = this.state;
-    if (approveTip == approvingTip) return;
+  onSellCatNFTOK = () => {
+    this.setState({swapANFT2HDWalletVisible: false});
+  }
 
-    const curStakeId = usdt.methods["approve"].cacheSend(trade.address, 
+  approveTomERC20 = () => {
+    const {tradeMarket, tomERC20, accountAddr, approveTomERC20Tip, approvingTip} = this.state;
+    if (approveTomERC20Tip == approvingTip) return;
+
+    const curStakeId = tomERC20.methods["approve"].cacheSend(tradeMarket.address, 
                                                         '0x' + new BigNumber(1).shiftedBy(26).toString(16), 
-                                                        {from: accountName});
-    this.setState({approveTip: approvingTip, curStakeId});
+                                                        {from: accountAddr});
+    this.setState({approveTomERC20Tip: approvingTip, curStakeId});
     this.syncTxStatus(() => {
-      usdt.methods.allowance(accountName, trade.address).call().then(v => {
-        this.setState({approvedUSDT: v, approveTip});
-      });
+      this.setState({approvedTomERC20: false, approveTomERC20Tip});
     }, () => { 
-      this.setState({approveTip}); 
+      this.setState({approveTomERC20Tip}); 
     });
   }
 
-  approveANFT = () => {
-    const {trade, hdANFT, accountName, approveANFTTip, approvingTip, curANFTId} = this.state;
-    if (approveANFTTip == approvingTip) return;
-
-    const curStakeId = hdANFT.methods["approve"].cacheSend(trade.address, 
-                                                           curANFTId, 
-                                                           {from: accountName});
-    this.setState({approveANFTTip: approvingTip, curStakeId});
+  buyCatConfirm = () => {
+    this.state.curStakeId = tradeMarket.methods["buyCat"].cacheSend(this.state.curCatNFTId, {from: accountAddr});
     this.syncTxStatus(() => {
-      this.setState({approvedANFT: true, approveANFTTip});
+      this.updateTomCatData();
+      this.updateMyInfo();
+    }, () => {});
+  }
+
+  approveCatNFT = () => {
+    const {tradeMarket, tomCatNFT, accountAddr, approveCatNFTTip, approvingTip, curCatNFTId} = this.state;
+    if (approveCatNFTTip == approvingTip) return;
+
+    const curStakeId = tomCatNFT.methods["approve"].cacheSend(tradeMarket.address, 
+                                                           curCatNFTId, 
+                                                           {from: accountAddr});
+    this.setState({approveCatNFTTip: approvingTip, curStakeId});
+    this.syncTxStatus(() => {
+      this.setState({approvedTomCatNFT: true, approveCatNFTTip});
     }, () => { 
-      this.setState({approveANFTTip}); 
+      this.setState({approveCatNFTTip}); 
+    })
+  }
+
+  addOrder = () => {
+    const {tradeMarket, accountAddr, curCatNFTId, sellPrice} = this.state;
+    const curStakeId = tradeMarket.methods["addOrder"].cacheSend(curCatNFTId, sellPrice, {from: accountAddr});
+    this.setState({curStakeId});
+    this.syncTxStatus(() => {
+      this.updateTomCatData();
+      this.updateTradeMarketData();
+      this.updateMyInfo();
+      this.setState({sellCatNFTVisible: false});
+    }, () => { 
+    })
+  }
+
+
+  cancelOrder = (catNFTId) => {
+    const {tradeMarket, accountAddr} = this.state;
+    const curStakeId = tradeMarket.methods["cancelOrder"].cacheSend(catNFTId, {from: accountAddr});
+    this.setState({curStakeId});
+    this.syncTxStatus(() => {
+      this.updateTomCatData();
+      this.updateTradeMarketData();
+      this.updateMyInfo();
+    }, () => { 
     })
   }
 
@@ -311,10 +387,10 @@ class BlockTxLayout extends Component {
         
         this.setState({curStakeId, boxOpeningVisible: true});
         this.syncTxStatus(() => {
-        hdBNFT.methods.nft2HeroIdMap(bNFTId).call().then(v => {
-          this.updateBNFTData();
-          this.setState({boxOpeningVisible: false});
-        });
+          hdBNFT.methods.nft2HeroIdMap(bNFTId).call().then(v => {
+            this.updateBNFTData();
+            this.setState({boxOpeningVisible: false});
+          });
         }, () => { 
           Feedback.toast.error('宝盒开启失败');
           this.setState({boxOpeningVisible: false});
@@ -325,6 +401,10 @@ class BlockTxLayout extends Component {
 
   swapANFT2HDWallet = () => {
     this.submitSwapReq();
+  }
+
+  handleSellPriceChange = (v) => {
+    this.state.sellPrice = new BigNumber(v).shiftedBy(18).toString();
   }
 
   syncTxStatus = (successCallback, failCallback) => {
@@ -374,6 +454,13 @@ class BlockTxLayout extends Component {
   }
 
   render() {
+    const { sellingCatInfos } = this.state.tradeMarketInfo;
+    const catInfos = [];
+    for(var id in sellingCatInfos) {
+      const catInfo = sellingCatInfos[id];
+      catInfo.id = id;
+      catInfos.push(catInfo);
+    }
     return (
       <div style={styles.container}>
         <div className='containMain'>
@@ -384,15 +471,7 @@ class BlockTxLayout extends Component {
                   <Row align='center' style={styles.titleRow}>
                     <img src={block} width='24'/>
                     <div style={styles.title}>
-                      {T('aNFT')}
-                    </div>
-                  </Row>
-                </Col>
-                <Col span='4' style={styles.item}>
-                  <Row align='center' style={styles.titleRow}>
-                    <img src={block} width='24'/>
-                    <div style={styles.title}>
-                      {T('bNFT')}
+                      {T('TOM猫')}
                     </div>
                   </Row>
                 </Col>
@@ -400,7 +479,15 @@ class BlockTxLayout extends Component {
                   <Row align='center' style={styles.titleRow}>
                     <img src={tx} width='24'/>
                     <div style={styles.title}>
-                      {T('xToken')}
+                      {T('猫咪市场')}
+                    </div>
+                  </Row>
+                </Col>
+                <Col span='4' style={{...styles.item, }}>
+                  <Row align='center' style={{...styles.titleRow, justifyContent: 'flex-end'}}>
+                    <img src={producer} width='24'/>
+                    <div style={styles.title}>
+                      {T('我的猫咪')}
                     </div>
                   </Row>
                 </Col>
@@ -408,107 +495,118 @@ class BlockTxLayout extends Component {
               <Row style={{width: '100%',  display:'flex', justifyContent:'space-between'}}>
                 <Col span="4" style={{...styles.item, textAlign:'left'}}>
                   <div style={styles.countTitle}>
-                  {T('总产出量')}
+                  {T('总数量')}
                   </div>
                   <div className="count" style={styles.count}>
-                    {this.state.aNFTInfo.totalSupply}
+                    {this.state.tomCatNFTInfo.totalSupply}
                     
                   </div>
                   
                   <div style={styles.smallCountTitle}>
-                  {T('总兑换量')}
+                  {T('种猫数量')}
                   </div>
 
                   <div className="count" style={styles.smallCount}>
-                    {this.state.aNFTInfo.burnedAmount}
+                    {this.state.tomCatNFTInfo.breedingCatNum}
+                  </div>
+
+
+                  <div style={styles.smallCountTitle}>
+                  {T('种猫手续费收入')}
+                  </div>
+
+                  <div className="count" style={styles.smallCount}>
+                   {this.state.tradeMarketInfo.breedingOwnerFee}
+                  </div>
+                  
+                </Col>
+                <Col span="4" style={styles.item}>
+                  
+                  <div style={styles.countTitle}>
+                  {T('总交易量')}
+                  </div>
+                  <div className="count" style={styles.count}>
+                    {utils.getReadableNumber(this.state.tradeMarketInfo.totalAmount, 18, 2)} TOM
                   </div>
 
                   <div style={styles.countTitle}>
-                  {T('我拥有的量')}
+                  {T('总成交笔数')}
+                  </div>
+                  <div className="count" style={styles.count}>
+                  {this.state.tradeMarketInfo.dealCount}
+                  </div>
+                  
+                  <div style={styles.countTitle}>
+                  {T('正在交易中的猫咪数量')}
                   </div>
                   <div className="count" style={styles.count}>
                     {/* {parseInt(this.state.robotNFT.methods["tokenCount"].cacheCall(), 16)} */}
-                    {this.state.aNFTInfo.myAmount}
-                  </div>
-                </Col>
-                <Col span="4" style={styles.item}>
-                  
-                  <div style={styles.countTitle}>
-                  {T('总产出量')}
-                  </div>
-                  <div className="count" style={styles.count}>
-                    {this.state.bNFTInfo.totalSupply}
-                  </div>
-                  
-                  <div style={styles.smallCountTitle}>
-                  {T('我拥有的量')}
-                  </div>
-
-                  <div className="count" style={styles.smallCount}>
-                   {this.state.bNFTInfo.myAmount}
+                    {this.state.tomCatNFTInfo.sellingCatNum}
                   </div>
                 </Col>
                 <Col span="4" style={styles.item}>
                   <div style={styles.countTitle}>
-                  {T('已挖出总量')}
+                  {T('数量')}
                   </div>
                   <div className="count" style={styles.count}>
-                    {this.displayReadableAmount(this.state.xTokenInfo.totalSupply)} {this.state.xTokenInfo.symbol}
-                  </div>
-                  
-                  {/* <div style={styles.smallCountTitle}>
-                  {T('当前流通量')}
-                  </div>
-
-                  <div className="count" style={styles.smallCount}>
-                    {this.displayReadableAmount(this.minusAmount(this.state.xTokenInfo.totalSupply, this.state.xTokenInfo.liquidityAmount))} {this.state.xTokenInfo.symbol}
-                  </div> */}
-
-                  <div style={styles.countTitle}>
-                  {T('我的余额')}
-                  </div>
-                  <div className="count" style={styles.count}>
-                   {this.displayReadableAmount(this.state.xTokenInfo.myAmount)} {this.state.xTokenInfo.symbol}
+                    {this.state.myInfo.totalAmount}
                   </div>
                   
                   <div style={styles.smallCountTitle}>
-                  {T('我的可提取量')}
+                  {T('出售中')}
                   </div>
 
                   <div className="count" style={styles.smallCount}>
-                    {this.displayReadableAmount(this.state.xTokenInfo.myPendingAmount, 2)} {this.state.xTokenInfo.symbol}
-
-                    <div class="common-btn" onClick={() => this.withdrawXToken()}>
-                      提取
-                    </div>
+                    {this.state.myInfo.sellingCatNum}
                   </div>
 
+                  <div style={styles.countTitle}>
+                  {T('种猫手续费')}
+                  </div>
+                  <div className="count" style={styles.count}>
+                   {this.state.myInfo.breedingFeeAmount}
+                  </div>
                 </Col>
               </Row>
             </div>
           </div>
-        </div>
+        </div>       
         <div className='block-container'>
             <div className='nft-title'> 
               <img src={block} width='24'/>
-              <b style={{fontSize: 20}}>{T('您的aNFT')}</b>
-              <div class="common-btn" onClick={() => this.openBuyANFTDialog()} title="10U/aNFT">
-                购买
+              <b style={{fontSize: 20}}>{T('您的猫咪')}</b>
+              <div class="common-btn" onClick={() => this.openCreateCatNFTDialog()} title="10U/aNFT">
+                创建猫咪NFT
               </div>
             </div>
             <div className='nft-list'>
               <ul>
               {
-                this.state.aNFTInfo.myTokenInfos.map(tokenInfo => {
+                this.state.myInfo.mySellingCatIds.map(catId => {
                   return (
                       <li>
                         <img src={key} width='80'/>
-                        <h2>ID: {tokenInfo.aNFTId}</h2>
+                        <h2>ID: {catId}</h2>
                         <div class="info-div">
-                          <p>购买时区块高度:{tokenInfo.startBlockNum}</p>
+                          <p>名称: AAA-{catId}</p>
                         </div>
-                        <div class="process-div" onClick={() => this.swap2HDWallet(tokenInfo.aNFTId)}>
-                        兑换
+                        <div class="process-div" onClick={() => this.cancelOrder(catId)}>
+                        取消出售
+                        </div>
+                      </li>)
+                })
+              }
+              {
+                this.state.myInfo.myCatIds.map(catId => {
+                  return (
+                      <li>
+                        <img src={key} width='80'/>
+                        <h2>ID: {catId}</h2>
+                        <div class="info-div">
+                          <p>名称: CCC-{catId}</p>
+                        </div>
+                        <div class="process-div" onClick={() => this.sellCat(catId)}>
+                        出售
                         </div>
                       </li>)
                 })
@@ -516,73 +614,139 @@ class BlockTxLayout extends Component {
               </ul>
             </div>
         </div>
-
         <div className='block-container'>
             <div className='nft-title'> 
               <img src={block} width='24'/>
-              <b style={{fontSize: 20}}>{T('您的bNFT')}</b>
-              <div width='60'/>
+              <b style={{fontSize: 20}}>{T('猫咪交易市场')}</b>    
+              <div class="common-btn" onClick={() => this.getMoreCatNFT()}>
+                查看更多
+              </div>          
             </div>
             <div className='nft-list'>
               <ul>
               {
-                this.state.bNFTInfo.myTokenInfos.map((bNftId) => {
-                  // const bNftId = tokenInfo.tokenId;
-                  const heroId = this.state.bNFTInfo.token2HeroId[bNftId];
-                  //const roleLevel = 1;//await this.state.mysteryBox.methods.heroId2LevelMap(heroId).call();
-                  return ( (heroId != null && heroId > 0) ?
+                catInfos.map(catInfo => {
+                  return (
                       <li>
-                        <div class="role-level">
-                          {this.state.heroLevel[heroId]}级
+                        <img src={key} width='80'/>
+                        <h2>ID: {catInfo.id}({catInfo.name})</h2>                        
+                        <div class="info-div">
+                          <p>是否种猫: {catInfo.breedingCat ? '是' : '否'}</p>
                         </div>
-                        <img style={{marginTop: -10}} src={'https://doulaig.oss-cn-hangzhou.aliyuncs.com/heros/' + heroId + '.png'} width='250'/>
-                        
-                        <h2 style={{marginTop: -25}}>ID: {bNftId}</h2>    
-                        <h2 style={{marginTop: -10}}>{herosName[heroId]}</h2>                  
-                      </li>
-                        :
-                      <li>
-                        <img src={box} width='180' title='点击开宝盒' onClick={() => this.openBox(bNftId)}/>
-                        <h2 style={{marginTop: -20}}>ID: {bNftId}</h2>                      
-                      </li>
-                      )
+                        <div class="info-div">
+                          <p>售价: {utils.getReadableNumber(catInfo.price, 18, 2)} TOM</p>
+                        </div>
+                        <div class="process-div" onClick={() => this.buyCat(catInfo.id, catInfo.price)}>
+                        购买
+                        </div>
+                      </li>)
                 })
               }
               </ul>
-            </div>
+            </div>            
         </div>
         <Dialog
-            visible={this.state.buyANFTVisible}
-            title={<div className='dialogTitle'><img src={key} width={80}/> <span className='title-text'>购买aNFT</span></div>}
+            visible={this.state.createCatNFTVisible}
+            title={<div className='dialogTitle'><img src={key} width={80}/> <span className='title-text'>创建猫咪NFT</span></div>}
             //footerActions="ok"
             footerAlign="center"
             closeable="true"
-            onOk={this.onBuyANFTOK.bind(this)}
-            onCancel={() => this.setState({ buyANFTVisible: false })}
-            onClose={() => this.setState({ buyANFTVisible: false })}
+            onOk={this.onCreateCatNFTOK.bind(this)}
+            onCancel={() => this.setState({ createCatNFTVisible: false })}
+            onClose={() => this.setState({ createCatNFTVisible: false })}
             className='dialogs'
             footer={<div className='dialog-footer'>
-                      {
-                        (this.state.approvedUSDT == 0) ? <div class="dialog-btn" onClick={() => this.approveUSDT()}>
-                                                        {this.state.approveTip}
-                                                      </div> 
-                                                        : 
-                                                      <div class="dialog-btn" onClick={() => this.buyANFT()}>
-                                                        提交
-                                                      </div>
-                      }
+                       <div class="dialog-btn" onClick={() => this.createCatNFT()}>
+                       提交
+                      </div>
                     </div>}
           >
             <Input hasClear
-              onChange={this.handleANFTNumberChange.bind(this)}
+              onChange={this.handleCatNameChange.bind(this)}
               className='node-input'
-              addonBefore="购买数量"
+              addonBefore="名称"
               size="medium"
-              defaultValue={1}
               maxLength={150}
               showLimitHint
             />
+            <Input hasClear
+              onChange={this.handleCatPicChange.bind(this)}
+              className='node-input'
+              addonBefore="头像URL"
+              size="medium"
+              maxLength={150}
+              showLimitHint
+            />
+            <div className='node-input' >
+              选择母猫:
+              <Select 
+                dataSource={this.state.motherInfos}
+                onChange={this.handleMotherIdChanged.bind(this)}/>
+            </div>
+            <Checkbox
+                className='node-input'
+                checked={this.state.isBreeding}
+                onChange={
+                    (checked) => {
+                        this.setState({isBreeding: checked});
+                    }
+                }
+            >是否种猫</Checkbox>
           </Dialog>
+        <Dialog
+          visible={this.state.sellCatNFTVisible}
+          title={<div className='dialogTitle'><img src={key} width={80}/> <span className='title-text'>放入交易市场进行出售</span></div>}
+          //footerActions="ok"
+          footerAlign="center"
+          closeable="true"
+          onOk={this.onSellCatNFTOK.bind(this)}
+          onCancel={() => this.setState({ sellCatNFTVisible: false })}
+          onClose={() => this.setState({ sellCatNFTVisible: false })}
+          className='dialogs'
+          footer={<div className='dialog-footer'>
+                    {
+                      !this.state.approvedTomCatNFT ? <div class="dialog-btn" onClick={() => this.approveCatNFT()}>
+                                                      {this.state.approveCatNFTTip}
+                                                    </div> 
+                                                      : 
+                                                    <div class="dialog-btn" onClick={() => this.addOrder()}>
+                                                      提交
+                                                    </div>
+                    }
+                  </div>}
+        >
+          <Input hasClear
+            onChange={this.handleSellPriceChange.bind(this)}
+            className='node-input'
+            addonBefore="出售价格:"
+            addonAfter="TOM"
+            size="medium"
+            maxLength={50}
+            showLimitHint
+          />
+        </Dialog>
+        <Dialog
+          visible={this.state.buyCatNFTVisible}
+          title={<div className='dialogTitle'><img src={key} width={80}/> <span className='title-text'>购买猫咪</span></div>}
+          //footerActions="ok"
+          footerAlign="center"
+          closeable="true"          
+          onCancel={() => this.setState({ buyCatNFTVisible: false })}
+          onClose={() => this.setState({ buyCatNFTVisible: false })}
+          className='dialogs'
+          footer={<div className='dialog-footer'>
+                    {
+                      !this.state.approvedTomERC20 ? <div class="dialog-btn" onClick={() => this.approveTomERC20()}>
+                                                      {this.state.approveTomERC20Tip}
+                                                    </div> 
+                                                      : 
+                                                    <div class="dialog-btn" onClick={() => this.buyCatConfirm()}>
+                                                      购买
+                                                    </div>
+                    }
+                  </div>}
+        >
+        </Dialog>
         <Dialog
           visible={this.state.swapANFT2HDWalletVisible}
           title={<div className='dialogTitle'><img src={key} width={80}/> <span className='title-text'>将aNFT兑换为硬件钱包</span></div>}
@@ -595,8 +759,8 @@ class BlockTxLayout extends Component {
           className='dialogs'
           footer={<div className='dialog-footer'>
                     {
-                      !this.state.approvedANFT ? <div class="dialog-btn" onClick={() => this.approveANFT()}>
-                                                      {this.state.approveANFTTip}
+                      !this.state.approvedTomCatNFT ? <div class="dialog-btn" onClick={() => this.approveCatNFT()}>
+                                                      {this.state.approveCatNFTTip}
                                                     </div> 
                                                       : 
                                                     <div class="dialog-btn" onClick={() => this.swapANFT2HDWallet()}>

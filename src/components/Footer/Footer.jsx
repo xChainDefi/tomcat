@@ -23,7 +23,7 @@ export default class Footer extends PureComponent {
         <div className="ice-design-layout-footer-body">
           <div className="logo">
             <Link to="/" className="logo-text">
-              HD Wallet Market
+            TomCat
             </Link>
           </div>
           {/* <div className="links">
@@ -61,7 +61,6 @@ export default class Footer extends PureComponent {
           </div> */}
         </div>
         <div className="copyright">
-          © 2019 Theme designed by hdwallet-nft.com &emsp; | &emsp; <a href='mailto:service@hdwallet-nft.com' className='copyright-link'>service@hdwallet-nft.com</a>
         </div>
       </Layout.Footer>
     );
