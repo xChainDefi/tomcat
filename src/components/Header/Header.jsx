@@ -56,13 +56,6 @@ class Header extends Component {
     setLang(this.state.defaultLang);
   }
   componentDidMount = () => {
-    // if(this.state.defaultLang && this.state.defaultLang !== localStorage.getItem('i18nextLng')){
-    //   i18n.changeLanguage(this.state.defaultLang);
-    //   this.setState({
-    //     ...this.state,
-    //     curLang: this.state.defaultLang
-    //   })
-    // }
   }
 
   componentWillReceiveProps(nextProps) {
