@@ -42,6 +42,8 @@ class Header extends Component {
       nodeInfo = constant.mainNetRPCHttpsAddr;
     }
     this.state = {
+      airdropTom: props.drizzle.contracts.AirdropTom,
+      accountAddr: props.drizzleState.accounts[0] != null ? props.drizzleState.accounts[0] : '0x0000000000000000000000000000000000000000',
       current: keyMap[props.location.pathname.substr(1)],
       menuColor: '#000000',
       nodeConfigVisible: false,
@@ -126,6 +128,10 @@ class Header extends Component {
       current: null
     });
     history.push('/download');
+  }
+  
+  airdropTom = () => {
+    this.state.airdropTom.methods['airdrop'].cacheSend({from: this.state.accountAddr});
   }
 
   initMetamaskNetwork = async () => {
@@ -252,6 +258,9 @@ class Header extends Component {
           className="ice-design-layout-header-menu"
           style={{ display: 'flex', alignItems: 'center' }}
         >
+          <div class="common-btn" style={{width: 150}} onClick={() => {this.airdropTom();}}>
+            空投Tom测试币
+          </div>
           {
             this.props.drizzleState.accounts[0] ? <Row align='center'>
                                                     <div class="static-btn">

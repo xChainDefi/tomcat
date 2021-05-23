@@ -15,7 +15,7 @@ const App = () => {
           const { drizzle, drizzleState, initialized } = drizzleContext;
 
           if (!initialized) {
-            return "连接火币Heco网络。。。"
+            return "连接火币Heco网络 (MetaMask需连接Heco网络)"
           }
 
           return (
