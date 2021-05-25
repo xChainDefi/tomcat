@@ -58,7 +58,10 @@ class BlockTxLayout extends Component {
       curPage: 0,
       approvedTom: 0,
       isBreeding: false,
-      motherInfos: []
+      motherInfos: [],
+      defaultIPFSHash: 'QmNtWjcfKTkJNfErtFMPwMV9F5C5DRKGUTHi4yjigtXP4N',
+      curCatInfo: {ipfsHash: 'QmNtWjcfKTkJNfErtFMPwMV9F5C5DRKGUTHi4yjigtXP4N'},
+      ipfsUrl: 'https://ipfs.io/ipfs/',
     };
   }
   //发送交易：
@@ -113,6 +116,13 @@ class BlockTxLayout extends Component {
             tradeMarketInfo.sellingCatInfos[catId].motherId = catInfo.motherId;
             this.setState({tradeMarketInfo});
           });
+          tomCatNFT.methods.tokenURI(catId).call().then(ipfsHash => {
+            if (tradeMarketInfo.sellingCatInfos[catId] == null) {
+              tradeMarketInfo.sellingCatInfos[catId] = {};
+            }
+            tradeMarketInfo.sellingCatInfos[catId].ipfsHash = ipfsHash.length < 20 ? this.state.defaultIPFSHash : ipfsHash;
+            this.setState({tradeMarketInfo});
+          });
           tradeMarket.methods.tokenOrderMap(catId).call().then(catInfo => {
             if (tradeMarketInfo.sellingCatInfos[catId] == null) {
               tradeMarketInfo.sellingCatInfos[catId] = {};
@@ -162,6 +172,14 @@ class BlockTxLayout extends Component {
             myInfo.mySellingCatInfos[catId].motherId = catInfo.motherId;
             this.setState({myInfo});
           });
+
+          tomCatNFT.methods.tokenURI(catId).call().then(ipfsHash => {
+            if (myInfo.mySellingCatInfos[catId] == null) {
+              myInfo.mySellingCatInfos[catId] = {};
+            }
+            myInfo.mySellingCatInfos[catId].ipfsHash = ipfsHash.length < 20 ? this.state.defaultIPFSHash : ipfsHash;
+            this.setState({myInfo});
+          });
         })
         motherInfos.push(...ids);
         this.setState({myInfo, motherInfos});
@@ -180,6 +198,13 @@ class BlockTxLayout extends Component {
               myInfo.myCatInfos[catId].desc = catInfo.desc;
               myInfo.myCatInfos[catId].isBreeding = catInfo.isBreeding;
               myInfo.myCatInfos[catId].motherId = catInfo.motherId;
+              this.setState({myInfo});
+            });
+            tomCatNFT.methods.tokenURI(catId).call().then(ipfsHash => {
+              if (myInfo.myCatInfos[catId] == null) {
+                myInfo.myCatInfos[catId] = {};
+              }
+              myInfo.myCatInfos[catId].ipfsHash = ipfsHash.length < 20 ? this.state.defaultIPFSHash : ipfsHash;
               this.setState({myInfo});
             });
             motherInfos.push(catId);
@@ -255,9 +280,10 @@ class BlockTxLayout extends Component {
     }, () => {})
   }
 
-  sellCat = (catId) => {
+  sellCat = (catInfo) => {
     const {tomCatNFT, accountAddr, tradeMarket} = this.state;
-    this.state.curCatNFTId = catId;
+    this.state.curCatNFTId = catInfo.catId;
+    this.state.curCatInfo = catInfo;
     tomCatNFT.methods.isApprovedForAll(accountAddr, tradeMarket.address).call().then(v => {
       this.setState({approvedTomCatNFT: v});
     });
@@ -403,10 +429,10 @@ class BlockTxLayout extends Component {
   }
 
 
-  cancelOrder = (catNFTId) => {
+  cancelOrder = (catInfo) => {
     const {tradeMarket, accountAddr} = this.state;
-    const curStakeId = tradeMarket.methods["cancelOrder"].cacheSend(catNFTId, {from: accountAddr});
-    this.setState({curStakeId});
+    const curStakeId = tradeMarket.methods["cancelOrder"].cacheSend(catInfo.id, {from: accountAddr});
+    this.setState({curStakeId, curCatInfo: catInfo});
     this.syncTxStatus(() => {
       this.updateTomCatData();
       this.updateTradeMarketData();
@@ -511,13 +537,13 @@ class BlockTxLayout extends Component {
     for(var id in myCatInfos) {
       const catInfo = myCatInfos[id];
       catInfo.id = id;
-      catInfo.bSelling = true;
+      catInfo.bSelling = false;
       myCatInfoList.push(catInfo);
     }
     for(var id in mySellingCatInfos) {
       const catInfo = mySellingCatInfos[id];
       catInfo.id = id;
-      catInfo.bSelling = false;
+      catInfo.bSelling = true;
       myCatInfoList.push(catInfo);
     }
 
@@ -645,7 +671,7 @@ class BlockTxLayout extends Component {
                 myCatInfoList.map(catInfo => {
                   return (
                       <li>
-                        <img src={key} width='80'/>
+                        <img src={this.state.ipfsUrl + catInfo.ipfsHash} width='80' height='80'/>
                         <h2>{catInfo.name}(ID:{catInfo.id})</h2>
                         
                         <div class="info-div">
@@ -656,7 +682,7 @@ class BlockTxLayout extends Component {
                         显示族谱
                         </div>
 
-                        <div class="process-div" onClick={() => {catInfo.bSelling ? this.cancelOrder(catInfo.id) : this.sellCat(catInfo.id)}}>
+                        <div class="process-div" onClick={() => {catInfo.bSelling ? this.cancelOrder(catInfo) : this.sellCat(catInfo)}}>
                         {catInfo.bSelling ? '取消出售' : '出售'}
                         </div>
                       </li>)
@@ -679,7 +705,7 @@ class BlockTxLayout extends Component {
                 inMarketCatInfos.map(catInfo => {
                   return (
                       <li>
-                        <img src={key} width='80'/>
+                        <img src={this.state.ipfsUrl + catInfo.ipfsHash} width='80' height='80'/>
                         <h2>ID: {catInfo.id}({catInfo.name})</h2>                        
                         <div class="info-div">
                           <p>是否种猫: {catInfo.breedingCat ? '是' : '否'}</p>
@@ -749,7 +775,7 @@ class BlockTxLayout extends Component {
           </Dialog>
         <Dialog
           visible={this.state.sellCatNFTVisible}
-          title={<div className='dialogTitle'><img src={key} width={80}/> <span className='title-text'>放入交易市场进行出售</span></div>}
+          title={<div className='dialogTitle'><img src={this.state.ipfsUrl + this.state.curCatInfo.ipfsHash} width={80}/> <span className='title-text'>放入交易市场进行出售</span></div>}
           //footerActions="ok"
           footerAlign="center"
           closeable="true"

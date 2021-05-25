@@ -605,10 +605,29 @@ function renderAddress(value) {
   return <address title={T('点击可复制')} onClick={ () => { copy(value); Message.show({type: 'success', content: '已复制', duration: 1000}); } }>{displayValue}</address>;
 }
 
+function validateImage(url)
+{    
+    var xmlHttp ;
+    if (window.ActiveXObject)
+     {
+      xmlHttp = new ActiveXObject("Microsoft.XMLHTTP");
+     }
+     else if (window.XMLHttpRequest)
+     {
+      xmlHttp = new XMLHttpRequest();
+     } 
+    xmlHttp.open("Get",url,false);
+    xmlHttp.send();
+    if(xmlHttp.status==404)
+      return false;
+    else
+      return true;
+}
+
 export { getFlatMenuData, getRouterData, formatterMenuData, hex2Bytes, bytes2Hex, str2Bytes, str2Hex,
          saveTxHash, saveTxBothFromAndTo, bytes2Number, deepClone, parsePrivateKey, checkPassword, 
          isEmptyObj, getPublicKeyWithPrefix, utf8ByteToUnicodeStr, getDataFromFile, storeDataToFile, 
          removeDataFromFile, loadKeystoreFromLS, loadAccountsFromLS, getReadableNumber, confuseInfo, 
          getGasEarned, getValidTime, checkIpVaild, getDuration, guid, getRandomInt, getSpanTime,
          getValidKeystores, storeContractABI, getContractABI, parseResult, checkPrefix, isEqualAddress, checkURC20,
-         trace, renderAddress };
+         trace, renderAddress, validateImage };
