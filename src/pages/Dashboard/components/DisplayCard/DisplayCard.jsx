@@ -16,7 +16,7 @@ import { getLatestBlock, getTransactionsNum } from './actions';
 import reducer from './reducer';
 import { T } from '../../../../utils/lang';
 import BigNumber from "bignumber.js";
-import herosName from './heroname.json';
+//import IpfsHttpClient from "ipfs-http-client";
 
 const { Row, Col } = Grid;
 const producer = require('./images/producers.png');
@@ -36,6 +36,7 @@ class BlockTxLayout extends Component {
   constructor(props) {
     super(props);
     this.state = {      
+      ipfs: null,
       approveTip: '授权TOM',
       tomCatNFT: props.drizzle.contracts.TomCatNFT,
       tradeMarket: props.drizzle.contracts.TradeMarket,
@@ -79,6 +80,13 @@ class BlockTxLayout extends Component {
 
   updateTomCatData = () => {
     const { tomCatNFT, tradeMarket, tomCatNFTInfo, tradeMarketInfo, priceDescending, pageSize } = this.state;
+    
+    const { create, urlSource } = require('ipfs-http-client')
+    this.state.ipfs = create({
+      host: "ipfs.infura.io",
+      port: "5001",
+      protocol: "https",
+    });
 
     tomCatNFT.methods.totalSupply().call().then(v => {
       tomCatNFTInfo.totalSupply = v;
@@ -216,6 +224,17 @@ class BlockTxLayout extends Component {
     } catch (error) {
       Feedback.toast.error(error.message || error);
     }
+  };
+
+  upload = async (e) => {
+    const file = e.target.files[0];
+    if (file == null) return;
+
+    const added = await this.state.ipfs.add(file, {
+      progress: (prog) => console.log('upload', `received: ${prog}`),
+    });
+    console.log('upload', added);
+    this.setState({catPic: added.path});
   };
 
   createCatNFT = () => {
@@ -397,7 +416,7 @@ class BlockTxLayout extends Component {
   }
 
   dispayAncestor = (catNFTId) => {
-    
+
   }
 
   openBox = (bNFTId) => {
@@ -701,19 +720,22 @@ class BlockTxLayout extends Component {
               maxLength={150}
               showLimitHint
             />
-            <Input hasClear
+            <Input hasClear readOnly
               onChange={this.handleCatPicChange.bind(this)}
+              value={this.state.catPic}
               className='node-input'
-              addonBefore="头像URL"
+              addonBefore="头像Hash"
               size="medium"
               maxLength={150}
               showLimitHint
             />
+            <input type="file" onChange={(e) => { this.upload(e); }} />
             <div className='node-input' >
-              选择母猫:
+              选择母猫ID:
               <Select 
                 dataSource={this.state.motherInfos}
                 onChange={this.handleMotherIdChanged.bind(this)}/>
+              (0表示无母猫)
             </div>
             <Checkbox
                 className='node-input'
