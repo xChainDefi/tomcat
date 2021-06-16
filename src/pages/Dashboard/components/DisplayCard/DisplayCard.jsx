@@ -38,6 +38,7 @@ class BlockTxLayout extends Component {
     this.state = {      
       ipfs: null,
       approveTip: '授权TOM',
+
       tomCatNFT: props.drizzle.contracts.TomCatNFT,
       tradeMarket: props.drizzle.contracts.TradeMarket,
       tomERC20: props.drizzle.contracts.TomERC20,
@@ -46,8 +47,9 @@ class BlockTxLayout extends Component {
       accountAddr: props.drizzleState.accounts[0] != null ? props.drizzleState.accounts[0] : '0x0000000000000000000000000000000000000000',
 
       tomCatNFTInfo: {totalSupply: 0, breedingCatNum: 0, sellingCatNum: 0},  // 总量，种猫数量，正在交易中的猫数量
-      tradeMarketInfo: {totalAmount: 0, dealCount: 0, breedingOwnerFee: 0, sellingCatInfos: {}},    // 总交易金额，总交易量，种猫拥有者的手续费收入
-      myInfo: {totalAmount:0, sellingCatNum: 0, breedingFeeAmount: 0, myCatInfos: [], mySellingCatInfos: []},         // 账户拥有的猫总数，出售中猫咪数量，以及种猫手续费收入
+      tradeMarketInfo: {totalAmount: 0, dealCount: 0, breedingOwnerFee: 0, sellingCatInfos: {}},    // 总交易金额，总交易量，种猫拥有者的手续费收入，出售中的猫咪信息
+      myInfo: {totalAmount:0, sellingCatNum: 0, breedingFeeAmount: 0, myCatInfos: [], mySellingCatInfos: []},   // 本人账户拥有的猫总数，出售中猫咪数量，以及种猫手续费收入
+      
       catInfo: {},
       approveTomERC20Tip: '授权Tom代币', 
       approveCatNFTTip: '授权猫咪NFT', 
@@ -259,7 +261,7 @@ class BlockTxLayout extends Component {
       progress: (prog) => console.log('upload', `received: ${prog}`),
     });
     console.log('upload', added);
-    this.setState({catPic: added.path});
+    this.setState({catPic: added.path});  // file hash
   };
 
   createCatNFT = () => {
