@@ -284,7 +284,7 @@ class BlockTxLayout extends Component {
 
   sellCat = (catInfo) => {
     const {tomCatNFT, accountAddr, tradeMarket} = this.state;
-    this.state.curCatNFTId = catInfo.catId;
+    this.state.curCatNFTId = catInfo.id;
     this.state.curCatInfo = catInfo;
     tomCatNFT.methods.isApprovedForAll(accountAddr, tradeMarket.address).call().then(v => {
       this.setState({approvedTomCatNFT: v});
